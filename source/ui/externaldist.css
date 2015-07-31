@@ -1,0 +1,12 @@
+.setup-section {
+	padding-bottom: 0px;
+}
+
+.input-prepend .input-append {
+	margin-bottom: 4px;
+}
+
+.add-on:nth-of-type(2) {
+	background-color: white;
+	width: 53px;
+}
