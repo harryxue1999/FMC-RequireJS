@@ -1,19 +1,24 @@
+// jshint unused:false
+/* global window, cruise*/
+
 'use strict';
 
-define(['phase'], function(phase) {
-	var isMach = $('#Qantas94Heavy-ap-spd span:last-child').text().trim() === 'M.';
+define(['phase', 'ui/actions'], function(phase, action) {
 	
-	// Switches mode between Mach. and KIAS
-	function switchMode() {
-		$('#Qantas94Heavy-ap-spd span:last-child').click();
-	}
-	
-	// @returns vertical speed and speed of aircraft
+	/**
+	 * Gets each plane's flight parameters, for VNAV
+	 *
+	 * @param {String} aircraft The aircraft name
+	 * @return {Array} vertical speed and speed
+	 */
 	function getFlightParameters (aircraft) {
 		var spd, vs;
 		var gndElev = ges.groundElevation * metersToFeet;
 		var a = ges.aircraft.animationValue.altitude;
-		
+		var isMach = $('#Qantas94Heavy-ap-spd span:last-child').text().trim() === 'M.';
+		var switchMode = function() {
+			$('#Qantas94Heavy-ap-spd span:last-child').click();
+		};
 
 		// CLIMB
 		if (phase == "climb") {
@@ -29,10 +34,10 @@ define(['phase'], function(phase) {
 				case "164":
 				case "166":
 				case "167":
-				case "170":
 				case "172":
 				case "183":
 				case "187":
+				case "200":
 					spd = 210;
 					vs = 3000;
 					break;
@@ -51,10 +56,10 @@ define(['phase'], function(phase) {
 				case "164":
 				case "166":
 				case "167":
-				case "170":
 				case "172":
 				case "183":
 				case "187":
+				case "200":
 					spd = 245;
 					vs = 2500;
 					break;
@@ -79,7 +84,7 @@ define(['phase'], function(phase) {
 					break;
 				case "162":
 				case "166":
-				case "170":
+				case "200":
 					spd = 290;
 					vs = 2200;
 					break;
@@ -107,7 +112,7 @@ define(['phase'], function(phase) {
 					break;
 				case "162":
 				case "166":
-				case "170":
+				case "200":
 					spd = 295;
 					vs = 1800;
 					break;
@@ -134,9 +139,9 @@ define(['phase'], function(phase) {
 				case "162":
 				case "164":
 				case "166":
-				case "170":
 				case "183":
 				case "187":
+				case "200":
 					vs = 1500;
 					break;
 				default:
@@ -147,7 +152,7 @@ define(['phase'], function(phase) {
 				switch (aircraft) {
 				case "162":
 				case "166":
-				case "170":
+				case "200":
 					spd = 0.76;
 					break;
 				case "a380":
@@ -174,8 +179,10 @@ define(['phase'], function(phase) {
 				if (!isMach) switchMode();
 				switch (aircraft) {
 				case "162":
+					spd = 0.785;
+					break;
 				case "166":
-				case "170":
+				case "200":
 					spd = 0.78;
 					break;
 				case "161":
@@ -242,8 +249,8 @@ define(['phase'], function(phase) {
 					case "162":
 					case "164":
 					case "166":
-					case "170":
 					case "187":
+					case "200":
 						spd = 0.77;
 						vs = -2300;
 						break;
@@ -255,7 +262,7 @@ define(['phase'], function(phase) {
 					switch (aircraft) {
 					case "162":
 					case "166":
-					case "170":
+					case "200":
 						spd = 295;
 						vs = -2100;
 						break;
@@ -290,10 +297,10 @@ define(['phase'], function(phase) {
 					case "164":
 					case "166":
 					case "167":
-					case "170":
 					case "172":
 					case "183":
 					case "187":
+					case "200":
 						spd = 280;
 						vs = -1800;
 						break;
