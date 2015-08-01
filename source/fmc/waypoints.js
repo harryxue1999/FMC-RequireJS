@@ -1,5 +1,5 @@
 // jshint unused:false
-/*global window, autopilot_pp*/
+/*global autopilot_pp*/
 
 // Array.prototype.move MUST be defined in main.js
 
@@ -17,6 +17,18 @@ define(function() {
 	
 	// The next waypoint
 	var nextWaypoint = "";
+	
+	// If TOD will be automatically calculated
+	var todCalc = false;
+	
+	// TOD distance
+	var tod;
+	
+	// cruise altitude
+	var cruise;
+	
+	// arrival airport altitude
+	var arrivalAlt = 0;
 	
 	/**
 	 * Turns the waypoints into an array
@@ -442,6 +454,10 @@ define(function() {
 		route: route, 
 		arrival: arrival,
 		nextWaypoint: nextWaypoint,
+		todCalc: todCalc,
+		tod: tod,
+		cruise: cruise,
+		arrivalAlt: arrivalAlt,
 		makeFixesArray: makeFixesArray,
 		toFixesString: toFixesString, 
 		toRouteString: toRouteString, 
