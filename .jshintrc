@@ -1,6 +1,7 @@
 { "globals":
   { "ges": true
   , "flight": true
+  , "metersToFeet": true
   , "define": true
   , "require": true
   , "requirejs": true
