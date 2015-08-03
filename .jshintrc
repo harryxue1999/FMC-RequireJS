@@ -1,6 +1,9 @@
 { "globals":
   { "ges": true
   , "flight": true
+  , "define": true
+  , "require": true
+  , "requirejs": true
   }
 , "laxcomma": true
 , "laxbreak": true
