@@ -5,9 +5,17 @@
 // @match http://www.gefs-online.com/gefs.php*
 // @match http://gefs-online.com/gefs.php*
 // @run-at document-end
-// @version 0.4.0.1505
+// @version 0.4.7.1505
 // @grant none
 // ==/UserScript==
+
+var tod;
+var VNAV = false;
+var arrival = [];
+var cruise;
+var phase = "climb";
+var todCalc = false;
+var fieldElev = 0;
 
 // Global variables/constants
 window.feetToNM = 1 / 6076;
@@ -15,6 +23,7 @@ window.nmToFeet = 6076;
 
 // fmc library, publicly accessible methods and variables
 window.fmc = {
+
 	math: {
 		/**
 		 * Turns degrees to radians
@@ -22,17 +31,17 @@ window.fmc = {
 		 * @param {Number} degrees The degree to be converted
 		 * @return {Number} Radians of the degree
 		 */
-		toRadians: function (degrees) {
-			return degrees * Math.PI / 180;
+		toRadians: function (d) {
+			return d * Math.PI / 180;
 		},
 		/**
-		 * Turns radians to degrees
+		 * Converts radians to degrees
 		 * 
 		 * @param {Number} radians The radian to be converted
 		 * @return {Number} Degree of the radian
 		 */
-		toDegrees: function (radians) {
-			return radians * 180 / Math.PI;
+		toDegrees: function (r) {
+			return r * 180 / Math.PI;
 		},
 		earthRadiusNM: 3440.06
 	},
@@ -81,14 +90,6 @@ window.fmc = {
 		}
 	}
 };
-
-var tod;
-var VNAV = false;
-var arrival = [];
-var cruise;
-var phase = "climb";
-var todCalc = false;
-var arrivalAlt = 0;
 
 /**
  * Updates the plane's progress during flying, set on a timer
@@ -140,115 +141,96 @@ function updateLNAV () {
 
 /**
  * Controls VNAV, plane's vertical navigation, set on a timer
- *
- * @TODO VNAV bugs fix + new implementation: ALMOST DONE
  */
 var VNAVTimer;
 function updateVNAV () {
-	var aircraft = ges.aircraft.name;
+	var route = fmc.waypoints.route;
+	
+	var params = getFlightParameters();
+	
 	var next = getNextWaypointWithAltRestriction();
-	var currentAlt = ges.aircraft.animationValue.altitude;
-	
-	if (next < 1) var targetAlt = currentAlt;
-	else var targetAlt = fmc.waypoints.route[next - 1][3];
-	
-	var deltaAlt = targetAlt - currentAlt;
-	var nextDist = getRouteDistance(next);
-	var targetDist = getTargetDist(deltaAlt);
-
-	var params = getFlightParameters(aircraft);
-	
-	var spd = params[0];
-	var vs, alt;
-	
 	var hasRestriction = next !== -1;
-	var targetReached = targetDist >= nextDist;
 	
-	// Manual override, is toggled
-	var tSpd = $('#tSpd').hasClass('btn-primary');
-	var tAlt = $('#tAlt').hasClass('btn-primary'); 
-	var tVS = $('#tVS').hasClass('btn-primary');
-		
-	console.log('SPD Toggled: ' + tSpd + ', ALT Toggled: ' + tAlt + ', V/S Toggled: ' + tVS);
-	
-	// If there is an altitude restriction
+	var currentAlt = ges.aircraft.animationValue.altitude;
+	var targetAlt, deltaAlt, nextDist, targetDist;
 	if (hasRestriction) {
-		console.log('Next Waypoint with Altitude Restriction: ' + fmc.waypoints.route[next - 1][0] + ' @ ' + fmc.waypoints.route[next - 1][3]);
-		console.log('deltaAlt: ' + deltaAlt + ', targetDist: ' + targetDist + ', nextDist: ' + nextDist);
-		// If target is not reached
-		if (!targetReached) {
-			// If phase is climb
-			if (phase == "climb") {
-				// Total distance it takes from current altitude to cruise and from cruise down to the next target altitude
-				var upAndDownDist = getTargetDist(cruise - currentAlt) + getTargetDist(targetAlt - cruise);
-				var incursionSetting = nextDist < upAndDownDist;
-				console.log('upAndDownDist: ' + upAndDownDist + ", Altitude incursion protection: " + incursionSetting);
-				
-				// If the current altitude approaches the restriction
-				// Given that the distance to next restricted waypoint is smaller than upAndDownDist
-				if (Math.abs(currentAlt - targetAlt) < 300 && incursionSetting) {
-					alt = targetAlt; 
-					vs = 1500;
-				}
-				// Normal conditions: 
-				else {
-					alt = cruise;
-					vs = params[1];
-				}
-			}
-			// if phase is descent, keep current altitude until target is reached
-			
-			/* Alternative solution: 
-			if (phase == "descent") {
-				// If target altitude approached prematurely
-				if (Math.abs(currentAlt - targetAlt) < 300) {
-					alt = targetAlt; 
-					vs = -1000;
-				}
-				else {
-					// If still in VNAV controlled descent altitude
-					if (currentAlt > 11000) {
-						alt = 11000;
-						vs = params[1];
-					}
-				}
-			}*/
-		}
-		
-		// If target is reached
-		else {
-			alt = targetAlt;
-			vs = fmc.math.getClimbrate(deltaAlt, nextDist);
-			console.log('VS: ' + vs + ' fpm');
-		}
-	} /*End of hasRestriction block*/
+		targetAlt = route[next - 1][3];
+		deltaAlt = targetAlt - currentAlt;
+		nextDist = getRouteDistance(next);
+		targetDist = getTargetDist(deltaAlt);
+		console.log('targetAlt: ' + targetAlt + ', deltaAlt: ' + deltaAlt + ', nextDist: ' + nextDist + ', targetDist: ' + targetDist);
+	}
 	
-	// If there is not an altitude restriction
-	else {
-		vs = params[1];
-		if (phase == "climb") {
+	var spd, vs, alt;
+	var tSpd = $('#tSpd').hasClass('btn-warning');
+	if (tSpd) spd = params[0];
+
+	// If the aircraft is climbing
+	if (phase == "climb") {
+	
+		// If there is an altitude restriction somewhere on the route
+		if (hasRestriction) {
+			var totalDist = getTargetDist(cruise - currentAlt) + getTargetDist(targetAlt - cruise);
+		
+			// Checks to see if the altitude restriction is on the climbing phase or descent phase
+			if (nextDist < totalDist) {
+				if (nextDist < targetDist) vs = fmc.math.getClimbrate(deltaAlt, nextDist);
+				else vs = params[1];
+				alt = targetAlt;
+			} else {
+				vs = params[1];
+				alt = cruise;
+			}
+		}
+	
+		// If there are no altitude restrictions left on the route
+		else {
+			vs = params[1];
 			alt = cruise;
-		} else if (phase == "descent" && currentAlt > 11000) {
-			alt = 11000;
+		}
+	} 
+
+	// If the aircraft is on descent
+	else if (phase == "descent") {
+	
+		// If there is an altitude restriction somewhere on the route
+		if (hasRestriction) {
+
+			// If targetDist has been reached
+			if (nextDist < targetDist) {
+				vs = fmc.math.getClimbrate(deltaAlt, nextDist);
+				alt = targetAlt;
+			}
+			
+			// If targetDist hasn't been reached do nothing until it has been reached
+		} 
+	
+		// If there are no altitude restrictions left on the route
+		else {
+		    vs = params[1];
+			if (currentAlt > 12000 + fieldElev) alt = 12000 + fieldElev;
 		}
 	}
 	
-	// Checks Top of Descent
+	// Calculates Top of Descent
 	if (todCalc || !tod) {
 		if (hasRestriction) {
-			tod = getRouteDistance(fmc.waypoints.route.length) - nextDist;
-			tod += targetDist;
+			tod = getRouteDistance(route.length) - nextDist;
+			tod += getTargetDist(targetAlt - cruise);
 		} else {
-			tod = getTargetDist(cruise - arrivalAlt);
+			tod = getTargetDist(fieldElev - cruise);
 		}
 		tod = Math.round(tod);
 		$('#todInput').val('' + tod).change();
+		console.log('TOD changed to ' + tod);
 	}
-
-	if (spd && tSpd) $('#Qantas94Heavy-ap-spd > input').val('' + spd).change();
-	if (vs && tVS) $('#Qantas94Heavy-ap-vs > input').val('' + vs).change();
-	if (alt && tAlt) $('#Qantas94Heavy-ap-alt > input').val('' + alt).change();
-
+	
+	// Updates SPD, VS, and ALT in Autopilot++ if new values exist
+	if (spd) $('#Qantas94Heavy-ap-spd > input').val('' + spd).change();
+	if (vs) $('#Qantas94Heavy-ap-vs > input').val('' + vs).change();
+	if (alt) $('#Qantas94Heavy-ap-alt > input').val('' + alt).change();
+	
+	// Updates flight phase
 	updatePhase();
 }
 
@@ -344,26 +326,18 @@ function checkSpeed () {
  * @param <restricted>[optional]{String} p Updates the phase to "p"
  * @TODO add a better logic, especially near the cruise phase
  */
-function updatePhase (p) {
-	if ($('#phaseLock').hasClass('btn-danger')) return; // locked
-	if (p) {
-		phase = p;
-		console.log('Phase set to ' + phase);
-		$('#phaseBtn').text(phase.substring(0,1).toUpperCase() + phase.substring(1));
-		return;
-	}
-	var original = phase;
-	var alt = 100 * Math.round(ges.aircraft.animationValue.altitude / 100);
-	if (ges.aircraft.groundContact) {
-		phase = "climb";
-	} else {
-		if (phase != "cruise" && alt == cruise) {
-			phase = "cruise";
-		} else if (phase == "cruise" && alt != cruise) {
-			phase = "descent";
+function updatePhase() {
+	var currentAlt = 100 * Math.round(ges.aircraft.animationValue.altitude / 100);
+	if (phase === "climb" && currentAlt === Number(cruise)) {
+		$('#phaseBtn').click();
+	} else if (phase === "cruise") {
+		var dist = getRouteDistance(fmc.waypoints.route.length + 1);
+		if (currentAlt !== Number(cruise)) {
+			$('#phaseBtn').click();
+		} else if (dist <= tod) {
+			$('#phaseBtn').click();
 		}
 	}
-	if (original !== phase) updatePhase(phase);
 }
 
 /**
@@ -397,8 +371,9 @@ function print (flightdist, nextdist, times) {
  * @param {String} aircraft The aircraft name
  * @return {Array} vertical speed and speed
  */
-function getFlightParameters (aircraft) {
+function getFlightParameters () {
 	var spd, vs;
+	var aircraft = ges.aircraft.name;
 	var gndElev = ges.groundElevation * metersToFeet;
 	var a = ges.aircraft.animationValue.altitude;
 	var isMach = $('#Qantas94Heavy-ap-spd span:last-child').text().trim() === 'M.';
@@ -599,7 +574,7 @@ function getFlightParameters (aircraft) {
 
 	// DESCENT
 	else if (phase == "descent") {
-		if (a > cruise - 700) {
+		if (a > cruise - 700 && cruise >= 31000) {
 			if (!isMach) switchMode();
 			vs = -1000;
 		} else {
@@ -643,7 +618,7 @@ function getFlightParameters (aircraft) {
 				default:
 					break;
 				}
-			} else if (a > 18000 && a <= 30000) {
+			} else if (a > 18000 && a < 30000) {
 				if (isMach) switchMode();
 				switch (aircraft) {
 				case "162":
@@ -671,7 +646,7 @@ function getFlightParameters (aircraft) {
 				default:
 					break;
 				}
-			} else if (a > 12000 + gndElev && a <= 18000) {
+			} else if (a > 12000 + fieldElev && a <= 18000) {
 				if (isMach) switchMode();
 				switch (aircraft) {
 				case "a380":
@@ -821,16 +796,17 @@ function geteta (hours, minutes) {
 function getRouteDistance (end) {
 	var loc = ges.aircraft.llaLocation || [0, 0, 0];
 	var start = fmc.waypoints.nextWaypoint || 0;
+	var route = fmc.waypoints.route;
 	var total;
-	if (fmc.waypoints.route.length === 0 || !fmc.waypoints.nextWaypoint) {
+	if (route.length === 0 || !fmc.waypoints.nextWaypoint) {
 		total = fmc.math.getDistance(loc[0], loc[1], arrival[1], arrival[2]);
 	} else {
-		total = fmc.math.getDistance(loc[0], loc[1], fmc.waypoints.route[start - 1][1], fmc.waypoints.route[start - 1][2]);
-		for (var i = start; i < end && i < fmc.waypoints.route.length; i++) {
-			total += fmc.math.getDistance(fmc.waypoints.route[i - 1][1], fmc.waypoints.route[i - 1][2], fmc.waypoints.route[i][1], fmc.waypoints.route[i][2]);
+		total = fmc.math.getDistance(loc[0], loc[1], route[start - 1][1], route[start - 1][2]);
+		for (var i = start; i < end && i < route.length; i++) {
+			total += fmc.math.getDistance(route[i - 1][1], route[i - 1][2], route[i][1], route[i][2]);
 		}
-		if (end > fmc.waypoints.route.length) {
-			total += fmc.math.getDistance(fmc.waypoints.route[fmc.waypoints.route.length - 1][1], fmc.waypoints.route[fmc.waypoints.route.length - 1][2], arrival[1], arrival[2]);
+		if (end > route.length) {
+			total += fmc.math.getDistance(route[route.length - 1][1], route[route.length - 1][2], arrival[1], arrival[2]);
 		}
 	}
 	return total;
@@ -1140,7 +1116,7 @@ fmc.waypoints.addWaypoint = function () {
 					.append($('<i>').addClass('icon-arrow-up'))
 					.click(function() {
 						var row = $(this).parents().eq(2);
-						shiftWaypoint(row, row.index(), "up");
+						fmc.waypoints.shiftWaypoint(row, row.index(), "up");
 					})
 
 					// Shift down
@@ -1150,7 +1126,7 @@ fmc.waypoints.addWaypoint = function () {
 					.append($('<i>').addClass('icon-arrow-down'))
 					.click(function() {
 						var row = $(this).parents().eq(2);
-						shiftWaypoint(row, row.index(), "down");
+						fmc.waypoints.shiftWaypoint(row, row.index(), "down");
 					})
 
 					// Remove
@@ -1249,6 +1225,37 @@ fmc.waypoints.loadFromSave = function (arg) {
 		
 	} else alert ("You did not save the waypoints or you cleared the browser's cache");
 };
+
+/**
+ * Shifts a waypoint up or down one step
+ *
+ * @param {jQuery element} r The element to be moved in the UI
+ * @param {Number} n Index of this waypoint
+ * @param <restricted>{String} d Direction of shifting, "up" or "down"
+ */
+fmc.waypoints.shiftWaypoint = function(r, n, d) {
+	var waypoints = fmc.waypoints;
+	console.log("Waypoint #" + n + " moved " + d);
+	if (!(d == "up" && n == 1 || d == "down" && n == waypoints.route.length)) {
+		if (d == "up") {
+			waypoints.route.move(n - 1, n - 2);
+			r.insertBefore(r.prev());
+			if (waypoints.nextWaypoint == n) {
+				waypoints.nextWaypoint = n - 1;
+			} else if (waypoints.nextWaypoint == n - 1) {
+				waypoints.nextWaypoint = n + 1;
+			}
+		} else {
+			waypoints.route.move(n - 1, n);
+			r.insertAfter(r.next());
+			if (waypoints.nextWaypoint == n) {
+				waypoints.nextWaypoint = n + 1;
+			} else if (waypoints.nextWaypoint == n + 1) {
+				waypoints.nextWaypoint = n - 1;
+			}
+		}
+	}
+}
 
 // Adds a confirm window to prevent accidental reset
 ges.resetFlight = function () {
@@ -1566,13 +1573,13 @@ modal: $('<div>')
 										.append(
 										$('<span>')
 											.addClass('add-on')
-											.text('Arrival Airport Altitude')
+											.text('Arrival Field Elev.')
 									,	$('<input>')
 											.attr('type','number')
 											.attr('placeholder','ft.')
 											.css('width','55px')
 											.change(function() {
-												arrivalAlt = Number($(this).val());
+												fieldElev = Number($(this).val());
 											})
 										)
 									)
@@ -1585,6 +1592,7 @@ modal: $('<div>')
 						.addClass('tab-pane')
 						.attr('id','vnav')
 						.append(
+							
 						// AUTO-CLIMB/DESCENT, CRUISE ALT ROW, PHASE, TOGGLE
 						$('<table>')
 							.append(
@@ -1614,7 +1622,7 @@ modal: $('<div>')
         									.attr('placeholder', 'ft')
         									.css('width', '80px')
         									.change(function () {
-            									cruise = $(this).val();
+            									cruise = Number( $(this).val());
             									console.log("Cruise Alt set to " + cruise + " ft.");
         									})
     									)
@@ -1622,7 +1630,8 @@ modal: $('<div>')
 								)	
 						,	$('<tr>')
 								.append(
-								/*Flight Phase*/
+								
+								// Flight Phase
 								$('<td>')
 									.append(
 									$('<div>')
@@ -1638,21 +1647,19 @@ modal: $('<div>')
 											.css('height', '30px')
 											.css('width', '77px')
 											.click(function() {
-												var text = $(this).text().toLowerCase();
-												var phases = ["climb", "cruise", "descent"];
-												
-												for (var i = 0; i < phases.length; i++) {
-													if (text === phases[i]) {
-														if (i == 2) {
-															updatePhase(phases[0]);
-															break;
-														} else {
-															updatePhase(phases[i+1]);
-															break;
-														}
+												if ( $('#phaseLock').hasClass('btn-default')) {
+													if (phase == "climb") {
+														$(this).text("Cruise");
+														phase = "cruise";
+													} else if (phase == "cruise") {
+														$(this).text("Descent");
+														phase = "descent";
+													} else {
+														$(this).text("Climb");
+														phase = "climb";
 													}
+													console.log("Phase set to " + phase)
 												}
-												
 											})
 									,	$('<button>')
 											.addClass('btn btn-default')
@@ -1669,45 +1676,22 @@ modal: $('<div>')
 											})
 										)	
 									)
-								/*VNAV Toggle Buttons*/
+								
+								// SPD Toggle Button
 							,	$('<td>')
 									.append(
 									$('<div>')
 										.addClass('input-prepend input-append')
 										.append(
-												$('<button>')
-													.addClass('btn btn-primary')
-													.attr('id', 'tAlt')
-													.text('ALT')
-													.css('width', '80px')
-													.click(function(){
-														if ($(this).hasClass('btn-primary'))
-															$(this).removeClass('btn-primary').addClass('btn-default');
-														else
-															$(this).removeClass('btn-default').addClass('btn-primary');
-													})
+												$('<span>')
+													.addClass('add-on')
+													.text('SPD Control')
 											,	$('<button>')
-													.addClass('btn btn-primary')
+													.addClass('btn btn-warning')
 													.attr('id', 'tSpd')
-													.text('SPD')
-													.css('width', '80px')
-													.click(function(){
-														if ($(this).hasClass('btn-primary'))
-															$(this).removeClass('btn-primary').addClass('btn-default');
-														else
-															$(this).removeClass('btn-default').addClass('btn-primary');
-													})
-											,	$('<button>')
-													.addClass('btn btn-primary')
-													.attr('id', 'tVS')
-													.text('V/S')
-													.css('width', '80px')
-													.click(function(){
-														if ($(this).hasClass('btn-primary'))
-															$(this).removeClass('btn-primary').addClass('btn-default');
-														else
-															$(this).removeClass('btn-default').addClass('btn-primary');
-													})
+													.text('ON')
+													.css('width', '60px')
+													.click(function() {toggleSpeed();})
 											)
 									)
 								)
@@ -1846,7 +1830,7 @@ modal: $('<div>')
 						.addClass('tab-pane')
 						.attr('id', 'load')
 						.append(
-						$('<th>Enter a SkyVector link, waypoints seperated by spaces, or a generated route</th>'),
+						$('<th>Enter waypoints seperated by spaces or a generated route</th>'),
 						$('<form>')
 							.attr('action','javascript:fmc.waypoints.toRoute(fmc.waypoints.input);')
 							.addClass('form-horizontal')
@@ -1858,8 +1842,8 @@ modal: $('<div>')
 									.append(
 									$('<span>')
 										.addClass('add-on')
-										.text('SkyVector / Waypoints ')
-										.append( $('<i>').addClass('icon-globe'))
+										.text('Waypoints ')
+										.append( $('<i>').addClass('icon-pencil'))
 								,	$('<input>')
 										.attr('type', 'text')
 										.addClass('input-xlarge gefs-stopPropagation')
@@ -2032,33 +2016,16 @@ function toggleVNAV () {
 }
 
 /**
- * Shifts a waypoint up or down one step
- *
- * @param {jQuery element} r The element to be moved in the UI
- * @param {Number} n Index of this waypoint
- * @param <restricted>{String} d Direction of shifting, "up" or "down"
+ * Enables or disables the speed control in VNAV
  */
-function shiftWaypoint (r, n, d) {
-	var waypoints = fmc.waypoints;
-	console.log("Waypoint #" + n + " moved " + d);
-	if (!(d == "up" && n == 1 || d == "down" && n == waypoints.route.length)) {
-		if (d == "up") {
-			waypoints.route.move(n - 1, n - 2);
-			r.insertBefore(r.prev());
-			if (waypoints.nextWaypoint == n) {
-				waypoints.nextWaypoint = n - 1;
-			} else if (waypoints.nextWaypoint == n - 1) {
-				waypoints.nextWaypoint = n + 1;
-			}
-		} else {
-			waypoints.route.move(n - 1, n);
-			r.insertAfter(r.next());
-			if (waypoints.nextWaypoint == n) {
-				waypoints.nextWaypoint = n + 1;
-			} else if (waypoints.nextWaypoint == n + 1) {
-				waypoints.nextWaypoint = n - 1;
-			}
-		}
+function toggleSpeed() {
+	if ($('#tSpd').hasClass('btn-warning')) {
+		$('#tSpd').removeClass('btn-warning').addClass('btn-default').text('OFF');
+		spdControl = false;
+		
+	} else {
+		$('#tSpd').removeClass('btn-default').addClass('btn-warning').text('ON');
+		spdControl = true;
 	}
 }
 
