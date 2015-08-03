@@ -18,6 +18,9 @@ define(function() {
 	// The next waypoint
 	var nextWaypoint = "";
 	
+	// If VNAV is enabled
+	var VNAV = false;
+	
 	// If TOD will be automatically calculated
 	var todCalc = false;
 	
@@ -28,7 +31,7 @@ define(function() {
 	var cruise;
 	
 	// arrival airport altitude
-	var arrivalAlt = 0;
+	var fieldElev = 0;
 	
 	/**
 	 * Turns the waypoints into an array
@@ -454,10 +457,11 @@ define(function() {
 		route: route, 
 		arrival: arrival,
 		nextWaypoint: nextWaypoint,
+		VNAV: VNAV,
 		todCalc: todCalc,
 		tod: tod,
 		cruise: cruise,
-		arrivalAlt: arrivalAlt,
+		fieldElev: fieldElev,
 		makeFixesArray: makeFixesArray,
 		toFixesString: toFixesString, 
 		toRouteString: toRouteString, 
