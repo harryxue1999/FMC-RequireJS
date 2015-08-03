@@ -1,6 +1,6 @@
 'use strict';
 
-define(['fmc/waypoints', 'fmc/math', 'distance/route'], function (waypoints, math, getRouteDistance) {
+define(['fmc/waypoints', 'fmc/math', 'distance/route', 'helperMethods'], function (waypoints, math, getRouteDistance, helper) {
 	/**
 	 * Updates the plane's progress during flying
 	 */
@@ -42,7 +42,7 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route'], function (waypoints, mat
 	 */
 	function printInfo (flightdist, nextdist, times) {
 		for (var i = 0; i < times.length; i++) {
-			times[i] = formatTime(times[i]);
+			times[i] = helper.formatTime(times[i]);
 		}
 		if (flightdist < 10) {
 			flightdist = Math.round(flightdist * 10) / 10;
@@ -59,56 +59,18 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route'], function (waypoints, mat
 	}
 	
 	/**
-	 * Helper method to make sure that a time is eligible
-	 *
-	 * @param {Number} h The hours
-	 * @param {Number} m The minutes
-	 * @return {Array} Array of eligible time, [h, m]
-	 */
-	function timeCheck (h, m) {
-		if (m >= 60) {
-			m -= 60;
-			h++;
-		}
-		if (h >= 24) h -= 24;
-		return [h, m];
-	}
-	
-	/**
-	 * Helper method for log, formats the time
-	 * 
-	 * @param {Array} time An array of the time: [hours, minutes]
-	 * @return {String} Formatted time: "hours : minutes"
-	 */
-	function formatTime (time) {
-		time[1] = checkZeros(time[1]);
-		return time[0] + ":" + time[1];
-	}
-
-	/**
-	 * Helper method, format zeros
-	 *
-	 * @param {Number} i The number to be checked
-	 * @return {String} The original number with 0's added
-	 */
-	function checkZeros (i) {
-		if (i < 10) i = "0" + i;
-		return i;
-	}
-	
-	/**
 	 * Gets "Estimated Time En-Route"
 	 *
 	 * @param {Number} The distance to the destination
 	 * @param {Boolean} a Is the aircraft in arrival
-	 * @return {Array} The time after <code>timeCheck(h, m)</code>
+	 * @return {Array} The time after <code>helper.timeCheck(h, m)</code>
 	 */
 	function getete (d, a) {
 		var hours = d / ges.aircraft.animationValue.ktas;
 		var h = parseInt(hours);
 		var m = Math.round(60 * (hours - h));
 		if (a) m += Math.round(ges.aircraft.animationValue.altitude / 4000);
-		return timeCheck(h, m);
+		return helper.timeCheck(h, m);
 	}
 	
 	/**
@@ -116,7 +78,7 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route'], function (waypoints, mat
 	 *
 	 * @param {Number} hours Hours
 	 * @param {Number} minutes Minutes
-	 * @return {Array} The timer after <code>timeCheck(hours, minutes)</code>
+	 * @return {Array} The timer after <code>helper.timeCheck(hours, minutes)</code>
 	 */
 	function geteta (hours, minutes) {
 		var date = new Date();
@@ -124,7 +86,7 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route'], function (waypoints, mat
 		var m = date.getMinutes();
 		h += hours;
 		m += Number(minutes);
-		return timeCheck(h, m);
+		return helper.timeCheck(h, m);
 	}
 	
 	return updateProgress;

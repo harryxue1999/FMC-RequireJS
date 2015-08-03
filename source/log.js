@@ -1,6 +1,6 @@
 'use strict';
 
-define(function() {
+define(['helperMethods'], function (helper) {
 	/**
 	 * Updates plane's flight log
 	 *
@@ -17,7 +17,7 @@ define(function() {
 			var date = new Date();
 			var h = date.getUTCHours();
 			var m = date.getUTCMinutes();
-			var time = formatTime(timeCheck(h, m));
+			var time = helper.formatTime(helper.timeCheck(h, m));
 			other = other || "none";
 			$('<tr>')
 				.addClass('data')
@@ -41,44 +41,6 @@ define(function() {
 				).appendTo('#logData');
 		}
 	}
-	
-	/**
-	 * Helper method to make sure that a time is eligible
-	 *
-	 * @param {Number} h The hours
-	 * @param {Number} m The minutes
-	 * @return {Array} Array of eligible time, [h, m]
-	 */
-	function timeCheck (h, m) {
-		if (m >= 60) {
-			m -= 60;
-			h++;
-		}
-		if (h >= 24) h -= 24;
-		return [h, m];
-	}
-	
-	/**
-	 * Helper method for log, formats the time
-	 * 
-	 * @param {Array} time An array of the time: [hours, minutes]
-	 * @return {String} Formatted time: "hours : minutes"
-	 */
-	function formatTime (time) {
-		time[1] = checkZeros(time[1]);
-		return time[0] + ":" + time[1];
-	}
-	
-	/**
-	 * Helper method, format zeros
-	 *
-	 * @param {Number} i The number to be checked
-	 * @return {String} The original number with 0's added
-	 */
-	function checkZeros (i) {
-		if (i < 10) i = "0" + i;
-		return i;
-	}
-	
+
 	return updateLog;
 });

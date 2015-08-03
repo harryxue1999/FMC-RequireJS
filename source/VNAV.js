@@ -7,110 +7,98 @@ define(['fmc/waypoints', 'fmc/math', 'phase', 'distance/route'], function (waypo
  	 * @TODO VNAV bugs fix + new implementation: ALMOST DONE
  	 */
 	function updateVNAV () {
-		var aircraft = ges.aircraft.name;
+		var route = waypoints.route;
+		var tod = waypoints.tod;
+		var todCalc = waypoints.todCalc;
+		var cruise = waypoints.cruise;
+		var phase = flightPhase.phase;
+		var fieldElev = waypoints.fieldElev;
+	
+		var params = getFlightParameters();
+	
 		var next = getNextWaypointWithAltRestriction();
-		var currentAlt = ges.aircraft.animationValue.altitude;
-	
-		if (next < 1) var targetAlt = currentAlt;
-		else var targetAlt = waypoints.route[next - 1][3];
-	
-		var deltaAlt = targetAlt - currentAlt;
-		var nextDist = getRouteDistance(next);
-		var targetDist = getTargetDist(deltaAlt);
-
-		var params = getFlightParameters(aircraft);
-	
-		var spd = params[0];
-		var vs, alt;
-	
 		var hasRestriction = next !== -1;
-		var targetReached = targetDist >= nextDist;
 	
-		// Manual override, is toggled
-		var tSpd = $('#tSpd').hasClass('btn-primary');
-		var tAlt = $('#tAlt').hasClass('btn-primary'); 
-		var tVS = $('#tVS').hasClass('btn-primary');
-		
-		console.log('SPD Toggled: ' + tSpd + ', ALT Toggled: ' + tAlt + ', V/S Toggled: ' + tVS);
-	
-		// If there is an altitude restriction
+		var currentAlt = ges.aircraft.animationValue.altitude;
+		var targetAlt, deltaAlt, nextDist, targetDist;
 		if (hasRestriction) {
-			console.log('Next Waypoint with Altitude Restriction: ' + waypoints.route[next - 1][0] + ' @ ' + waypoints.route[next - 1][3]);
-			console.log('deltaAlt: ' + deltaAlt + ', targetDist: ' + targetDist + ', nextDist: ' + nextDist);
-			// If target is not reached
-			if (!targetReached) {
-				// If phase is climb
-				if (flightPhase.phase == "climb") {
-					// Total distance it takes from current altitude to waypoints.cruise and from waypoints.cruise down to the next target altitude
-					var upAndDownDist = getTargetDist(waypoints.cruise - currentAlt) + getTargetDist(targetAlt - waypoints.cruise);
-					var incursionSetting = nextDist < upAndDownDist;
-					console.log('upAndDownDist: ' + upAndDownDist + ", Altitude incursion protection: " + incursionSetting);
-				
-					// If the current altitude approaches the restriction
-					// Given that the distance to next restricted waypoint is smaller than upAndDownDist
-					if (Math.abs(currentAlt - targetAlt) < 300 && incursionSetting) {
-						alt = targetAlt; 
-						vs = 1500;
-					}
-					// Normal conditions: 
-					else {
-						alt = waypoints.cruise;
-						vs = params[1];
-					}
-				}
-				// if phase is descent, keep current altitude until target is reached
-			
-				/* Alternative solution: 
-				if (flightPhase.phase == "descent") {
-					// If target altitude approached prematurely
-					if (Math.abs(currentAlt - targetAlt) < 300) {
-						alt = targetAlt; 
-						vs = -1000;
-					}
-					else {
-						// If still in VNAV controlled descent altitude
-						if (currentAlt > 11000) {
-							alt = 11000;
-							vs = params[1];
-						}
-					}
-				}*/
-			}
-		
-			// If target is reached
-			else {
-				alt = targetAlt;
-				vs = math.getClimbrate(deltaAlt, nextDist);
-				console.log('VS: ' + vs + ' fpm');
-			}
-		} /*End of hasRestriction block*/
-	
-		// If there is not an altitude restriction
-		else {
-			vs = params[1];
-			if (flightPhase.phase == "climb") {
-				alt = waypoints.cruise;
-			} else if (flightPhase.phase == "descent" && currentAlt > 11000) {
-				alt = 11000;
-			}
+			targetAlt = route[next - 1][3];
+			deltaAlt = targetAlt - currentAlt;
+			nextDist = getRouteDistance(next);
+			targetDist = getTargetDist(deltaAlt);
+			console.log('targetAlt: ' + targetAlt + ', deltaAlt: ' + deltaAlt + ', nextDist: ' + nextDist + ', targetDist: ' + targetDist);
 		}
 	
-		// Checks Top of Descent
-		if (waypoints.todCalc || !waypoints.tod) {
+		var spd, vs, alt;
+		var tSpd = $('#tSpd').hasClass('btn-warning');
+		if (tSpd) spd = params[0];
+
+		// If the aircraft is climbing
+		if (phase == "climb") {
+	
+			// If there is an altitude restriction somewhere on the route
 			if (hasRestriction) {
-				waypoints.tod = getRouteDistance(waypoints.route.length) - nextDist;
-				waypoints.tod += targetDist;
-			} else {
-				waypoints.tod = getTargetDist(waypoints.cruise - waypoints.arrivalAlt);
+				var totalDist = getTargetDist(cruise - currentAlt) + getTargetDist(targetAlt - cruise);
+		
+				// Checks to see if the altitude restriction is on the climbing phase or descent phase
+				if (nextDist < totalDist) {
+					if (nextDist < targetDist) vs = math.getClimbrate(deltaAlt, nextDist);
+					else vs = params[1];
+					alt = targetAlt;
+				} else {
+					vs = params[1];
+					alt = cruise;
+				}
 			}
-			waypoints.tod = Math.round(waypoints.tod);
-			$('#todInput').val('' + waypoints.tod).change();
+	
+			// If there are no altitude restrictions left on the route
+			else {
+				vs = params[1];
+				alt = cruise;
+			}
+		} 
+
+		// If the aircraft is on descent
+		else if (phase == "descent") {
+	
+			// If there is an altitude restriction somewhere on the route
+			if (hasRestriction) {
+
+				// If targetDist has been reached
+				if (nextDist < targetDist) {
+					vs = math.getClimbrate(deltaAlt, nextDist);
+					alt = targetAlt;
+				}
+			
+				// If targetDist hasn't been reached do nothing until it has been reached
+			} 
+	
+			// If there are no altitude restrictions left on the route
+			else {
+			    vs = params[1];
+				if (currentAlt > 12000 + fieldElev) alt = 12000 + fieldElev;
+			}
 		}
-
-		if (spd && tSpd) $('#Qantas94Heavy-ap-spd > input').val('' + spd).change();
-		if (vs && tVS) $('#Qantas94Heavy-ap-vs > input').val('' + vs).change();
-		if (alt && tAlt) $('#Qantas94Heavy-ap-alt > input').val('' + alt).change();
-
+	
+		// Calculates Top of Descent
+		if (todCalc || !tod) {
+			if (hasRestriction) {
+				tod = getRouteDistance(route.length) - nextDist;
+				tod += getTargetDist(targetAlt - cruise);
+			} else {
+				tod = getTargetDist(fieldElev - cruise);
+			}
+			tod = Math.round(tod);
+			$('#todInput').val('' + tod).change();
+			console.log('TOD changed to ' + tod);
+		}
+	
+		// Updates SPD, VS, and ALT in Autopilot++ if new values exist
+		if (spd) $('#Qantas94Heavy-ap-spd > input').val('' + spd).change();
+		if (vs) $('#Qantas94Heavy-ap-vs > input').val('' + vs).change();
+		if (alt) $('#Qantas94Heavy-ap-alt > input').val('' + alt).change();
+	
+		// Updates flight phase
 		flightPhase.update();
 	}
 	
