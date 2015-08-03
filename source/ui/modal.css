@@ -1,1 +1,39 @@
-/* To be implemented */
+/* To be implemented */ 
+
+.modal {
+	width: 590px;
+	display: none;
+}
+
+#myModalLabel {
+	text-align: center;
+}
+
+div.tab-content {
+	padding: 5px;
+}
+
+td:nth-of-type(1) td:nth-of-type(2) td:nth-of-type(3) {
+	padding: 5px;
+}
+
+#addWaypoint {
+	margin-right: 3px;
+}
+
+#saveRoute {
+	margin-right: 3px;
+}
+
+#todInput {
+	width: 38px;
+}
+
+#arrivalInput {
+	width: 55px;
+}
+
+#cruiseAlt {
+	width: 80px; /*line:141 in html code so far*/
+}
+

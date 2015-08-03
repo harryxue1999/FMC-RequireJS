@@ -1,12 +1,12 @@
 <!--
 @TODO seperate style information; add in actions
 -->
-<div class="modal hide gefs-stopPropagation" data-backdrop="static" id="fmcModal" tabindex="-1" role="dialog" aria-labelledby="fmcDialogBoxLabel" aria-hidden="true" style="width: 590px; display: none;">
+<div class="modal hide gefs-stopPropagation" data-backdrop="static" id="fmcModal" tabindex="-1" role="dialog" aria-labelledby="fmcDialogBoxLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button class="close" type="button" data-dismiss="modal" aria-hidden="true">×</button>
-                <h3 class="modal-title" id="myModalLabel" style="text-align: center;">Flight Management Computer</h3>
+                <h3 class="modal-title" id="myModalLabel">Flight Management Computer</h3>
             </div>
 			<!-- Modal Body -->
             <div class="modal-body">
@@ -19,7 +19,7 @@
                     <li class=""><a href="#log" data-toggle="tab">LOG</a></li>
                 </ul>
 				<!-- Modal Tab Contents -->
-                <div class="tab-content" style="padding: 5px;">
+                <div class="tab-content">
 					<!-- Route tab -->
                     <div class="tab-pane active" id="rte">
                         <table>
@@ -28,19 +28,19 @@
                                     <table>
                                         <tbody>
                                             <tr>
-                                                <td style="padding: 5px;">
+                                                <td>
                                                     <div class="input-prepend input-append">
 														<span class="add-on">Departure</span>
                                                         <input class="input-mini" id="departureInput" type="text" placeholder="ICAO">
                                                     </div>
                                                 </td>
-                                                <td style="padding: 5px;">
+                                                <td>
                                                     <div class="input-prepend input-append">
 														<span class="add-on">Arrival</span>
                                                         <input class="input-mini" type="text" id="arrivalInput" placeholder="ICAO">
                                                     </div>
                                                 </td>
-                                                <td style="padding: 5px;">
+                                                <td>
                                                     <div class="input-prepend input-append">
 														<span class="add-on">Flight #</span>
                                                         <input class="input-mini" id="flightNumInput" type="text" style="width: 80px;">
@@ -68,7 +68,7 @@
                                             <tbody>
                                                 <tr>
                                                     <td>
-                                                        <button class="btn btn-primary" type="button" style="margin-right: 3px;">Add Waypoint 
+                                                        <button class="btn btn-primary" type="button" id="addWaypoint">Add Waypoint 
 															<i class="icon-plus"></i>
 														</button>
                                                     </td>
@@ -83,10 +83,10 @@
                                             <tbody>
                                                 <tr>
                                                     <td>
-                                                        <button class="btn btn-info" type="button" style="margin-right: 3px;">Save Route 
+                                                        <button class="btn btn-info" type="button" id="saveRoute">Save Route 
 															<i class="icon-file icon-white"></i>
                                                         </button>
-                                                        <button class="btn btn-info" type="button">Retrieve Route 
+                                                        <button class="btn btn-info" type="button" id="retrieveRoute">Retrieve Route 
 															<i class="icon-refresh icon-white"></i>
                                                         </button>
                                                     </td>
@@ -106,7 +106,7 @@
                                     <td>
                                         <div class="input-prepend input-append">
 											<span class="add-on">TOD Dist.</span>
-                                            <input id="todInput" type="number" min="0" placeholder="nm" style="width: 38px;">
+                                            <input id="todInput" type="number" min="0" placeholder="nm">
                                         </div>
                                     </td>
                                     <td>
@@ -120,7 +120,7 @@
                                     <td>
                                         <div class="input-prepend input-append">
 											<span class="add-on">Arrival Airport Altitude</span>
-                                            <input type="number" placeholder="ft." style="width: 55px;">
+                                            <input id="arrivalInput" type="number" placeholder="ft.">
                                         </div>
                                     </td>
                                 </tr>
@@ -138,7 +138,7 @@
 												<i class="icon icon-resize-vertical"></i>
 											</button>
 											<span class="add-on">Cruise Alt.</span>
-                                            <input type="number" step="100" min="0" max="100000" placeholder="ft" style="width: 80px;">
+                                            <input id="cruiseAlt" type="number" step="100" min="0" max="100000" placeholder="ft">
                                         </div>
                                     </td>
                                 </tr>
