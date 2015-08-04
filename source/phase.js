@@ -1,6 +1,6 @@
 'use strict';
 
-define(['fmc/waypoints', 'distance/route'], function (waypoints, getRouteDistance) {
+define(['fmc/waypoints', 'distance/route'], function (waypoints, getRouteDist) {
 	// Phase of flight
 	var phase = "climb";
 	
@@ -20,7 +20,7 @@ define(['fmc/waypoints', 'distance/route'], function (waypoints, getRouteDistanc
 		if (phase === "climb" && currentAlt === Number(cruise)) {
 			$('#phaseBtn').click();
 		} else if (phase === "cruise") {
-			var dist = getRouteDistance(route.length + 1);
+			var dist = getRouteDist(route.length + 1);
 			if (currentAlt !== Number(cruise)) {
 				$('#phaseBtn').click();
 			} else if (dist <= tod) {

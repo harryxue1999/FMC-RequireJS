@@ -5,7 +5,7 @@
 
 'use strict';
 
-define(function() {
+define(['data'], function (data) {
 	// Route input to be loaded
 	var input = "";
 	
@@ -33,47 +33,8 @@ define(function() {
 	// arrival airport altitude
 	var fieldElev = 0;
 	
-	/**
-	 * Turns the waypoints into an array
-	 *
-	 * @return {Array} The array of waypoint names
-	 */
-	function makeFixesArray () {
-		var result = [];
-		var departureVal = $('#departureInput').val();
-		if (departureVal) result.push(departureVal);
-		$('.waypoint td:first-child div > input').each(function() {
-			result.push($(this).val());
-		});
-		var arrivalVal = $('#arrivalInput').val();
-		if (arrivalVal) result.push(arrivalVal);
-		
-		return result;
-	}
-	
-	/**
-	 * Joins the fixes array into a string
-	 *
-	 * @return {String} All waypoints, each seperated by a space
-	 */
-	function toFixesString () {
-		return makeFixesArray().join(" ");
-	}
-	
-	/**
-	 * Makes a sharable route
-	 * 
-	 * @return {String} A sharable route with airports and waypoints, 
-	 * 					using <code>JSON.stringify</code> method
-	 */
-	function toRouteString () {
-		return JSON.stringify ([
-			$('#departureInput').val(), 
-			$('#arrivalInput').val(), 
-			$('#flightNumInput').val(), 
-			route
-		]);
-	}
+	// If VNAV controls the speed
+	var spdControl = true;
 	
 	/**
 	 * Accesses autopilot_pp library and find the coordinates for the waypoints
@@ -114,7 +75,7 @@ define(function() {
 	 * @param {String} url A SkyVector Link, an input of waypoints, or a shared/generated route
 	 */
 	function toRoute (url) {
-		if (url.indexOf('["') === 0) loadFromSave(url);
+		if (url.indexOf('["') === 0) data.load(url);
 		else {
 			var index = url.indexOf('fpl=');
 			var isSkyvector = url.indexOf('skyvector.com') !== -1 && index !== -1;
@@ -322,75 +283,6 @@ define(function() {
 			nextWaypoint = null;
 		}
 	}
-
-	/**
-	 * Saves the waypoints data into localStorage
-	 */
-	function saveData () {
-		if (route.length < 1 || !route[0][0]) {
-			alert ("There is no route to save");
-		} else {
-			localStorage.removeItem('fmcWaypoints');
-			var arr = toRouteString();
-			localStorage.setItem ("fmcWaypoints", arr);
-		}
-	}
-
-	/**
-	 * Retrieves the saved data and adds to the waypoint list
-	 *
-	 * @param {String} arg The generated route
-	 */
-	function loadFromSave (arg) {
-	
-	/**
-	 * The argument passed in [optional] or the localStorage is a 
-	 * 3D array in String format. arr is the array after JSON.parse 
-	 *	
-	 * @param {String} arr[0] Departure input
-	 * @param {String} arr[1] Arrival Input
-	 * @param {String} arr[2] Flight Number
-	 * @param {Array} arr[3] 2D array, the route
-	 */
-	
-		arg = arg || localStorage.getItem('fmcWaypoints');
-		var arr = JSON.parse(arg);
-		localStorage.removeItem('fmcWaypoints');
-	
-		if (arr) {
-			route = [];
-			var route = arr[3];
-			var n = $('#waypoints tbody tr').length - 1;
-			for (var i = 0; i < n; i++) {
-				removeWaypoint(1);
-			}
-			// JSON.stringify turns undefined into null; this loop turns it back
-			route.forEach(function (wpt) {
-				if (!wpt[3] || wpt[3] == null || wpt[3] === 0) wpt[3] = undefined;
-			});
-		
-			if (arr[0]) $('#departureInput').val(arr[0]).change();
-			if (arr[1]) $('#arrivalInput').val(arr[1]).change();
-			if (arr[2]) $('#flightNumInput').val(arr[2]).change();
-		
-			for (var i = 0; i < route.length; i++) {
-				addWaypoint();
-				$('#waypoints input.wpt:eq(' + i + ')').val(route[i][0]).change(); // Input the fix
-			
-				// If the waypoint is not eligible or a duplicate
-				if (!route[i][4] || !$('#waypoints input.lat:eq(' + i + ')').val()) {
-					$('#waypoints input.lat:eq(' + i + ')').val(route[i][1]).change(); // Input the lat.
-					$('#waypoints input.lon:eq(' + i + ')').val(route[i][2]).change(); // Input the lon.
-				}
-			
-				if (route[i][3]) // If there is an altitude restriction
-					$('#waypoints input.alt:eq(' + i + ')').val(route[i][3]).change();
-			}
-			// Auto-saves the data once again
-			saveData();
-		
-		} else alert ("You did not save the waypoints or you cleared the browser's cache");
-	}
 	
 	/**
 	 * Activates a waypoint or deactivates if the waypoint is already activated
@@ -462,16 +354,12 @@ define(function() {
 		tod: tod,
 		cruise: cruise,
 		fieldElev: fieldElev,
-		makeFixesArray: makeFixesArray,
-		toFixesString: toFixesString, 
-		toRouteString: toRouteString, 
+		spdControl: spdControl,
 		getCoords: getCoords,
 		formatCoords: formatCoords,
 		toRoute: toRoute,
 		addWaypoint: addWaypoint, 
 		removeWaypoint: removeWaypoint,
-		saveData: saveData,
-		loadFromSave: loadFromSave,
 		activateLeg: activateLeg,
 		shiftWaypoint: shiftWaypoint
 	};

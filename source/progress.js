@@ -1,6 +1,6 @@
 'use strict';
 
-define(['fmc/waypoints', 'fmc/math', 'distance/route', 'helperMethods'], function (waypoints, math, getRouteDistance, helper) {
+define(['fmc/waypoints', 'fmc/math', 'distance/route', 'helperMethods'], function (waypoints, math, getRouteDist, helper) {
 	/**
 	 * Updates the plane's progress during flying
 	 */
@@ -10,7 +10,7 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route', 'helperMethods'], functio
 		var lat2 = waypoints.arrival[1] || 0;
 		var lon2 = waypoints.arrival[2] || 0;
 		var times = ["--", "--", "--", "--", "--"]; // flightete, flighteta, todete, todeta, nextete
-		var nextdist = getRouteDistance(waypoints.nextWaypoint);
+		var nextdist = getRouteDist(waypoints.nextWaypoint);
 		if (nextdist < 10) {
 			nextdist = (Math.round(10 * nextdist)) / 10;
 		} else nextdist = Math.round(nextdist);
@@ -18,16 +18,16 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route', 'helperMethods'], functio
 		for (var i = 0, test = true; i < waypoints.route.length; i++) {
 			if (!waypoints.route[i][1]) test = false;
 		}
-		if (test) flightdist = getRouteDistance(waypoints.route.length + 1);
+		if (test) flightdist = getRouteDist(waypoints.route.length + 1);
 		else flightdist = math.getDistance(lat1, lon1, lat2, lon2);
 
 		if (!ges.aircraft.groundContact && waypoints.arrival) {
-			times[0] = getete(flightdist, true);
-			times[1] = geteta(times[0][0], times[0][1]);
-			times[4] = getete(nextdist, false);
+			times[0] = getETE(flightdist, true);
+			times[1] = getETA(times[0][0], times[0][1]);
+			times[4] = getETE(nextdist, false);
 			if ((flightdist - waypoints.tod) > 0) {
-				times[2] = getete((flightdist - waypoints.tod), false);
-				times[3] = geteta(times[2][0], times[2][1]);
+				times[2] = getETE((flightdist - waypoints.tod), false);
+				times[3] = getETA(times[2][0], times[2][1]);
 			}
 		}
 		printInfo (flightdist, nextdist, times);
@@ -65,7 +65,7 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route', 'helperMethods'], functio
 	 * @param {Boolean} a Is the aircraft in arrival
 	 * @return {Array} The time after <code>helper.timeCheck(h, m)</code>
 	 */
-	function getete (d, a) {
+	function getETE (d, a) {
 		var hours = d / ges.aircraft.animationValue.ktas;
 		var h = parseInt(hours);
 		var m = Math.round(60 * (hours - h));
@@ -80,7 +80,7 @@ define(['fmc/waypoints', 'fmc/math', 'distance/route', 'helperMethods'], functio
 	 * @param {Number} minutes Minutes
 	 * @return {Array} The timer after <code>helper.timeCheck(hours, minutes)</code>
 	 */
-	function geteta (hours, minutes) {
+	function getETA (hours, minutes) {
 		var date = new Date();
 		var h = date.getHours();
 		var m = date.getMinutes();

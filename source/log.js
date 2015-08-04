@@ -41,6 +41,16 @@ define(['helperMethods'], function (helper) {
 				).appendTo('#logData');
 		}
 	}
+	
+	/**
+	 * Clears the log
+	 */
+	function removeLogData () {
+		$('#logData tr').remove('.data');
+	}
 
-	return updateLog;
+	return {
+		update: updateLog,
+		remove: removeLogData
+	};
 });
