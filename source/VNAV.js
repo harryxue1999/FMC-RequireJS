@@ -1,6 +1,6 @@
 'use strict';
 
-define(['fmc/waypoints', 'fmc/math', 'phase', 'distance/route'], function (waypoints, math, flightPhase, getRouteDistance) {
+define(['fmc/waypoints', 'fmc/math', 'phase', 'distance/route', 'distance/target'], function (waypoints, math, flightPhase, getRouteDist, getTargetDist) {
 	/**
  	 * Controls VNAV, plane's vertical navigation, set on a timer
 	 *
@@ -24,7 +24,7 @@ define(['fmc/waypoints', 'fmc/math', 'phase', 'distance/route'], function (waypo
 		if (hasRestriction) {
 			targetAlt = route[next - 1][3];
 			deltaAlt = targetAlt - currentAlt;
-			nextDist = getRouteDistance(next);
+			nextDist = getRouteDist(next);
 			targetDist = getTargetDist(deltaAlt);
 			console.log('targetAlt: ' + targetAlt + ', deltaAlt: ' + deltaAlt + ', nextDist: ' + nextDist + ', targetDist: ' + targetDist);
 		}
@@ -83,7 +83,7 @@ define(['fmc/waypoints', 'fmc/math', 'phase', 'distance/route'], function (waypo
 		// Calculates Top of Descent
 		if (todCalc || !tod) {
 			if (hasRestriction) {
-				tod = getRouteDistance(route.length) - nextDist;
+				tod = getRouteDist(route.length) - nextDist;
 				tod += getTargetDist(targetAlt - cruise);
 			} else {
 				tod = getTargetDist(fieldElev - cruise);
@@ -409,22 +409,6 @@ define(['fmc/waypoints', 'fmc/math', 'phase', 'distance/route'], function (waypo
 		}
 
 		return [spd, vs];
-	}
-	
-	/**
-	 * Computes the distance needed to climb or descend to a certain altitude from current altitude
-	 * 
-	 * @param {Number} deltaAlt The altitude difference
-	 * @return {Number} The distance
-	 */
-	function getTargetDist (deltaAlt) {
-		var targetDist;
-		if (deltaAlt < 0) {
-			targetDist = deltaAlt / -1000 * 3.4;
-		} else {
-			targetDist = deltaAlt / 1000 * 2.5;
-		}
-		return targetDist;
 	}
 	
 	/**
