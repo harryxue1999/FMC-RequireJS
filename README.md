@@ -1,17 +1,20 @@
 # FMC-RequireJS
-The moving of FMC to RequireJS platform, for GEFS Online, a free flight simulator based on the google earth plugin. Original FMC author: Ethan Shields
-    
-    Copyright (C) 2015 Harry Xue
+The moving of FMC to RequireJS platform, for GEFS Online, a free flight simulator based on the google earth plugin. 
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+### Original FMC Code
+	Copyright (C) 2015 Ethan Shields, 2015 Harry Xue
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+### RequireJS
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	 RequireJS 2.1.17 Copyright (c) 2010-2015, The Dojo Foundation All Rights Reserved.
+	 Available via the MIT or new BSD license.
+	 see: http://github.com/jrburke/requirejs for details
+
+### Optimization
+*Dependencies: r.js*
+
+	$ r.js -o name=main baseURL=. out=intended/output/directory
+
+**If you have any questions, please contact me at <harry.xue@hotmail.com>**
+
+Copyright (C) 2015 Harry Xue
