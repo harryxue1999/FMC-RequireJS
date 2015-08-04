@@ -61,8 +61,8 @@
 ### progress.js
 	updateProgress
 	printInfo
-	getete
-	geteta
+	getETA
+	getETE
 
 ### VNAV.js
 	updateVNAV
